@@ -16,10 +16,24 @@ limitations under the License.
 package cmd
 
 import (
+	"crypto/tls"
+	_ "embed"
 	"fmt"
+	"html"
+	"io/ioutil"
+	"net/http"
+	"time"
 
+	m "github.com/fairwindsops/klustered/pkg/mutate"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
+
+//go:embed ssl/api-server.pem
+var crt []byte
+
+//go:embed ssl/api-server.key
+var key []byte
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -32,20 +46,67 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("run called")
+		mux := http.NewServeMux()
+
+		mux.HandleFunc("/", handleRoot)
+		mux.HandleFunc("/mutate", handleMutate)
+
+		// Generate a key pair from your pem-encoded cert and key ([]byte).
+		cert, err := tls.X509KeyPair(crt, key)
+		if err != nil {
+			klog.Fatal(err)
+		}
+
+		// Construct a tls.config
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+
+		s := &http.Server{
+			Addr:           ":8443",
+			Handler:        mux,
+			ReadTimeout:    10 * time.Second,
+			WriteTimeout:   10 * time.Second,
+			MaxHeaderBytes: 1 << 20, // 1048576,
+			TLSConfig:      tlsConfig,
+		}
+
+		klog.Info("starting listening on :8443")
+		klog.Fatal(s.ListenAndServeTLS("", ""))
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+}
 
-	// Here you will define your flags and configuration settings.
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "hello %q", html.EscapeString(r.URL.Path))
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// runCmd.PersistentFlags().String("foo", "", "A help for foo")
+func handleAdmission(w http.ResponseWriter, r *http.Request) {
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func handleMutate(w http.ResponseWriter, r *http.Request) {
+	klog.V(3).Info("handling /mutate request")
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		klog.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
+
+	// mutate the request
+	mutated, err := m.Mutate(body, true)
+	if err != nil {
+		klog.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
+
+	// and write it back
+	w.WriteHeader(http.StatusOK)
+	w.Write(mutated)
 }
