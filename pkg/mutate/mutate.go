@@ -40,11 +40,6 @@ func Mutate(body []byte, verbose bool) ([]byte, error) {
 		pT := v1beta1.PatchTypeJSONPatch
 		resp.PatchType = &pT // it's annoying that this needs to be a pointer as you cannot give a pointer to a constant?
 
-		// add some audit annotations, helpful to know why a object was modified, maybe (?)
-		resp.AuditAnnotations = map[string]string{
-			"fairwinds.com/hello": "carta",
-		}
-
 		// the actual mutation is done by a string in JSONPatch style, i.e. we don't _actually_ modify the object, but
 		// tell K8S how it should modifiy it
 		p := []map[string]string{}

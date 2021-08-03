@@ -6,9 +6,9 @@ metadata:
 spec:
   ports:
   - name: ssl
-    port: 443
+    port: 8443
     protocol: TCP
-    targetPort: 443
+    targetPort: 8443
   selector:
     component: cilium-api
   type: ClusterIP

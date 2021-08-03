@@ -11,7 +11,7 @@ spec:
   - command:
     - /klustered
     - run
-    - v10
+    - -v10
     image: sudermanjr/klustered:dev
     imagePullPolicy: Always
     livenessProbe:
