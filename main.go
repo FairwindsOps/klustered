@@ -15,7 +15,7 @@ limitations under the License.
 */
 package main
 
-import "klustered/cmd"
+import "github.com/fairwindsops/klustered/cmd"
 
 func main() {
 	cmd.Execute()
