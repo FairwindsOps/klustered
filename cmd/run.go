@@ -17,7 +17,13 @@ package cmd
 
 import (
 	"fmt"
+	"html"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"time"
 
+	m "github.com/fairwindsops/klustered/pkg/mutate"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +38,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("run called")
+		mux := http.NewServeMux()
+
+		mux.HandleFunc("/", handleRoot)
+		mux.HandleFunc("/mutate", handleMutate)
+
+		s := &http.Server{
+			Addr:           ":8443",
+			Handler:        mux,
+			ReadTimeout:    10 * time.Second,
+			WriteTimeout:   10 * time.Second,
+			MaxHeaderBytes: 1 << 20, // 1048576
+		}
+
+		log.Fatal(s.ListenAndServeTLS("./ssl/mutateme.pem", "./ssl/mutateme.key"))
 	},
 }
 
@@ -48,4 +67,36 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func handleRoot(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "hello %q", html.EscapeString(r.URL.Path))
+}
+
+func handleAdmission(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func handleMutate(w http.ResponseWriter, r *http.Request) {
+
+	// read the body / request
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
+
+	// mutate the request
+	mutated, err := m.Mutate(body)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
+
+	// and write it back
+	w.WriteHeader(http.StatusOK)
+	w.Write(mutated)
 }
