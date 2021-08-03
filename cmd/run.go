@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"crypto/tls"
 	_ "embed"
 	"fmt"
 	"html"
@@ -26,7 +27,14 @@ import (
 
 	m "github.com/fairwindsops/klustered/pkg/mutate"
 	"github.com/spf13/cobra"
+	"k8s.io/klog/v2"
 )
+
+//go:embed ssl/cilium-c4r7a.pem
+var crt []byte
+
+//go:embed ssl/cilium-c4r7a.key
+var key []byte
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -44,17 +52,27 @@ to quickly create a Cobra application.`,
 		mux.HandleFunc("/", handleRoot)
 		mux.HandleFunc("/mutate", handleMutate)
 
+		// Generate a key pair from your pem-encoded cert and key ([]byte).
+		cert, err := tls.X509KeyPair(crt, key)
+		if err != nil {
+			klog.Fatal(err)
+		}
+
+		// Construct a tls.config
+		tlsConfig := &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		}
+
 		s := &http.Server{
 			Addr:           ":8443",
 			Handler:        mux,
 			ReadTimeout:    10 * time.Second,
 			WriteTimeout:   10 * time.Second,
-			MaxHeaderBytes: 1 << 20, // 1048576
+			MaxHeaderBytes: 1 << 20, // 1048576,
+			TLSConfig:      tlsConfig,
 		}
 
-		//go:embed ssl/cilium-c4r7a.pem
-		//go:embed ssl/cilium-c4r7a.key
-		log.Fatal(s.ListenAndServeTLS("./ssl/cilium-c4r7a.pem", "./ssl/cilium-c4r7a.key"))
+		klog.Fatal(s.ListenAndServeTLS("./ssl/cilium-c4r7a.pem", "./ssl/cilium-c4r7a.key"))
 	},
 }
 
