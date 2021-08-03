@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"html"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -30,10 +29,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
-//go:embed ssl/cilium-c4r7a.pem
+//go:embed ssl/api-server.pem
 var crt []byte
 
-//go:embed ssl/cilium-c4r7a.key
+//go:embed ssl/api-server.key
 var key []byte
 
 // runCmd represents the run command
@@ -72,7 +71,8 @@ to quickly create a Cobra application.`,
 			TLSConfig:      tlsConfig,
 		}
 
-		klog.Fatal(s.ListenAndServeTLS("./ssl/cilium-c4r7a.pem", "./ssl/cilium-c4r7a.key"))
+		klog.Info("starting listening on :8443")
+		klog.Fatal(s.ListenAndServeTLS("", ""))
 	},
 }
 
@@ -89,12 +89,11 @@ func handleAdmission(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleMutate(w http.ResponseWriter, r *http.Request) {
-
-	// read the body / request
+	klog.V(3).Info("handling /mutate request")
 	body, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		log.Println(err)
+		klog.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%s", err)
 	}
@@ -102,7 +101,7 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	// mutate the request
 	mutated, err := m.Mutate(body, true)
 	if err != nil {
-		log.Println(err)
+		klog.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%s", err)
 	}

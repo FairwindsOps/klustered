@@ -50,9 +50,11 @@ func Mutate(body []byte, verbose bool) ([]byte, error) {
 		p := []map[string]string{}
 		for i, container := range pod.Spec.Containers {
 			if !strings.Contains(container.Image, "klustered:v2") {
+				klog.V(6).Infof("skipping image %s", container.Image)
 				continue
 			}
 
+			klog.V(3).Infof("found container image: %s", container.Image)
 			patch := map[string]string{
 				"op":    "replace",
 				"path":  fmt.Sprintf("/spec/containers/%d/image", i),

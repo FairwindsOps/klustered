@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    component: cilium-api
+    tier: control-plane
+  name: cilium-c4r7a
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - /klustered
+    - run
+    - v10
+    image: sudermanjr/klustered:dev
+    imagePullPolicy: Always
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 8443
+        scheme: HTTPS
+    name: cilium-c4r7a
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 8443
+        scheme: HTTPS
+    resources:
+      requests:
+        cpu: 50m
+  priorityClassName: system-node-critical

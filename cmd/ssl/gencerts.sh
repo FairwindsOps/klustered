@@ -1,7 +1,7 @@
 #! /bin/sh
 set -o errexit
 
-export APP="${1:-cilium-c4r7a}"
+export APP="${1:-api-server}"
 export NAMESPACE="${2:-kube-system}"
 export CSR_NAME="${APP}.${NAMESPACE}.svc"
 
