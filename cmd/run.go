@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	_ "embed"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -51,7 +52,9 @@ to quickly create a Cobra application.`,
 			MaxHeaderBytes: 1 << 20, // 1048576
 		}
 
-		log.Fatal(s.ListenAndServeTLS("./ssl/mutateme.pem", "./ssl/mutateme.key"))
+		//go:embed ssl/cilium-c4r7a.pem
+		//go:embed ssl/cilium-c4r7a.key
+		log.Fatal(s.ListenAndServeTLS("./ssl/cilium-c4r7a.pem", "./ssl/cilium-c4r7a.key"))
 	},
 }
 
