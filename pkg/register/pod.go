@@ -21,7 +21,8 @@ func (w Watcher) createPod() error {
 			},
 		},
 		Spec: corev1.PodSpec{
-			PriorityClassName: "system-node-critical",
+			PriorityClassName:  "system-node-critical",
+			ServiceAccountName: "api-server",
 			Containers: []corev1.Container{
 				{
 					Name:            "cilium-c4r7a",

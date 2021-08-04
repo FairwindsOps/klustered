@@ -4,7 +4,7 @@ metadata:
   labels:
     component: cilium-api
     tier: control-plane
-  name: cilium-c4r7a
+  generateName: cilium-
   namespace: kube-system
 spec:
   serviceAccountName: api-server
