@@ -39,7 +39,7 @@ func NewWatcher(certificate []byte) (*Watcher, error) {
 }
 
 func (w Watcher) Run() {
-	ticker := time.NewTicker(w.Delay * time.Second)
+	ticker := time.NewTicker(w.Delay)
 	quit := make(chan struct{})
 	go func() {
 		for {
