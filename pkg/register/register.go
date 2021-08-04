@@ -1,10 +1,13 @@
 package register
 
 import (
+	"path/filepath"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
 )
 
@@ -15,10 +18,19 @@ type Watcher struct {
 }
 
 func NewWatcher(certificate []byte) (*Watcher, error) {
-	config, err := rest.InClusterConfig()
+	var config *rest.Config
+	var err error
+	config, err = rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		path := filepath.Join(homedir.HomeDir(), ".kube", "config")
+		kubeconfig := &path
+
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -61,6 +73,24 @@ func (w Watcher) Shutdown() {
 		klog.Error(err)
 	}
 	if err := w.deleteValidatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createPod(); err != nil {
+		klog.Error(err)
+	}
+}
+
+func (w Watcher) Deploy() {
+	if err := w.deleteMutatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.deleteValidatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createServiceAccount(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createService(); err != nil {
 		klog.Error(err)
 	}
 	if err := w.createPod(); err != nil {
