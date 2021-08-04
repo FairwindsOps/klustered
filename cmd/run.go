@@ -31,13 +31,14 @@ var key []byte
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Runs the klustered program for breaking the cluster.",
+	Long: `Run sets up an http server on 8443 that does a few things:
+	
+- Responds to a mutating admission webhook on /mutate
+- Responds to a validating admissino webhook on /admission
+- Responds to health checks on /
+- Creates a service, mutatingadmissionconfiguration, and validatingadmissionconfiguration
+- Re-creates itself as a new pod if killed gracefully`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// Setup the auto-registration of webhooks and service
 		watcher, err := r.NewWatcher(crt)
