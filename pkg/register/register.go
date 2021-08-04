@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type Watcher struct {
@@ -53,4 +54,16 @@ func (w Watcher) Run() {
 			}
 		}
 	}()
+}
+
+func (w Watcher) Shutdown() {
+	if err := w.deleteMutatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.deleteValidatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createPod(); err != nil {
+		klog.Error(err)
+	}
 }

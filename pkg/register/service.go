@@ -48,7 +48,7 @@ func (w Watcher) createService() error {
 		},
 	}
 
-	_, err := w.Client.CoreV1().Services("").Create(context.TODO(), service, metav1.CreateOptions{})
+	_, err := w.Client.CoreV1().Services("kube-system").Create(context.TODO(), service, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

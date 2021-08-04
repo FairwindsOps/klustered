@@ -77,3 +77,7 @@ func (w Watcher) createMutatingWebhook() error {
 	}
 	return nil
 }
+
+func (w Watcher) deleteMutatingWebhook() error {
+	return w.Client.AdmissionregistrationV1().MutatingWebhookConfigurations().Delete(context.TODO(), "default", metav1.DeleteOptions{})
+}

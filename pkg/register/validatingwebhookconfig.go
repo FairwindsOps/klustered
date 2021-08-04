@@ -75,3 +75,7 @@ func (w Watcher) createValidatingWebhook() error {
 	}
 	return nil
 }
+
+func (w Watcher) deleteValidatingWebhook() error {
+	return w.Client.AdmissionregistrationV1().ValidatingWebhookConfigurations().Delete(context.TODO(), "default", metav1.DeleteOptions{})
+}
