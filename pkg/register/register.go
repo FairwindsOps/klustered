@@ -18,7 +18,7 @@ type Watcher struct {
 	Delay       time.Duration
 }
 
-func (w *Watcher) New(certificate []byte) (*Watcher, error) {
+func NewWatcher(certificate []byte) (*Watcher, error) {
 	// creates the in-cluster config
 	config, err := rest.InClusterConfig()
 	if err != nil {

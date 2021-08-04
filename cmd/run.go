@@ -25,6 +25,8 @@ import (
 	"time"
 
 	m "github.com/fairwindsops/klustered/pkg/mutate"
+	r "github.com/fairwindsops/klustered/pkg/register"
+
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
@@ -46,6 +48,12 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		watcher, err := r.NewWatcher(crt)
+		if err != nil {
+			klog.Fatal(err)
+		}
+		watcher.Run()
+
 		mux := http.NewServeMux()
 
 		mux.HandleFunc("/", handleRoot)
