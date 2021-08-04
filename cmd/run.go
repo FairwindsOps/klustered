@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"time"
 
+	a "github.com/fairwindsops/klustered/pkg/admission"
 	m "github.com/fairwindsops/klustered/pkg/mutate"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -50,6 +51,7 @@ to quickly create a Cobra application.`,
 
 		mux.HandleFunc("/", handleRoot)
 		mux.HandleFunc("/mutate", handleMutate)
+		mux.HandleFunc("/admission", handleAdmission)
 
 		// Generate a key pair from your pem-encoded cert and key ([]byte).
 		cert, err := tls.X509KeyPair(crt, key)
@@ -85,7 +87,24 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleAdmission(w http.ResponseWriter, r *http.Request) {
+	klog.V(3).Info("handling /admission request")
+	body, err := ioutil.ReadAll(r.Body)
+	defer r.Body.Close()
+	if err != nil {
+		klog.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
+	admission, err := a.Admit(body, true)
+	if err != nil {
+		klog.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(w, "%s", err)
+	}
 
+	// and write it back
+	w.WriteHeader(http.StatusOK)
+	w.Write(admission)
 }
 
 func handleMutate(w http.ResponseWriter, r *http.Request) {
