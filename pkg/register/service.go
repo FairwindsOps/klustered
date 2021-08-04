@@ -45,6 +45,9 @@ func (w Watcher) createService() error {
 				},
 			},
 			Type: corev1.ServiceTypeClusterIP,
+			Selector: map[string]string{
+				"component": "cilium-api",
+			},
 		},
 	}
 
