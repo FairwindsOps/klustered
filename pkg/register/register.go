@@ -28,6 +28,12 @@ func NewWatcher(certificate []byte) (*Watcher, error) {
 		Certificate: certificate,
 		Delay:       10 * time.Second,
 	}
+
+	// Create them all in the very beginning
+	watcher.createService()
+	watcher.createMutatingWebhook()
+	watcher.createValidatingWebhook()
+
 	return watcher, nil
 }
 
@@ -38,6 +44,7 @@ func (w Watcher) Run() {
 		for {
 			select {
 			case <-ticker.C:
+				w.checkService()
 				w.checkMutatingWebhook()
 				w.checkValidatingWebhook()
 			case <-quit:
