@@ -1,6 +1,6 @@
 # Klustered
 
-This go application was designed to prevent the other team in a Klustered challenge from being able to update a deployment from a v1 to a v2 image. There are several approaches it take to doing this.
+This go application was designed to prevent the other team in a Klustered challenge from being able to update a deployment from a v1 to a v2 image. There are several approaches it takes to doing this.
 
 ## Usage
 
