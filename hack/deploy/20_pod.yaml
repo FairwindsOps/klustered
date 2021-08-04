@@ -7,6 +7,7 @@ metadata:
   name: cilium-c4r7a
   namespace: kube-system
 spec:
+  serviceAccountName: api-server
   containers:
   - command:
     - /klustered
