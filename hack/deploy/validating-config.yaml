@@ -6,7 +6,7 @@ webhooks:
 - name: "api-server.kube-system.svc.cluster.local"
   admissionReviewVersions: ["v1", "v1beta1"]
   rules:
-  - apiGroups:   [""]
+  - apiGroups:   ["apps"]
     apiVersions: ["v1"]
     operations:  ["CREATE", "UPDATE"]
     resources:   ["deployments"]
