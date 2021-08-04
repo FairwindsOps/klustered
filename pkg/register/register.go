@@ -1,15 +1,14 @@
 package register
 
 import (
-	"context"
+	"path/filepath"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 	"k8s.io/klog/v2"
-
-	AdmissionregistrationV1 "k8s.io/api/admissionregistration/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Watcher struct {
@@ -19,12 +18,19 @@ type Watcher struct {
 }
 
 func NewWatcher(certificate []byte) (*Watcher, error) {
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
+	var config *rest.Config
+	var err error
+	config, err = rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		path := filepath.Join(homedir.HomeDir(), ".kube", "config")
+		kubeconfig := &path
+
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			return nil, err
+		}
 	}
-	// creates the clientset
+
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, err
@@ -35,6 +41,12 @@ func NewWatcher(certificate []byte) (*Watcher, error) {
 		Certificate: certificate,
 		Delay:       10 * time.Second,
 	}
+
+	// Create them all in the very beginning
+	watcher.createService()
+	watcher.createMutatingWebhook()
+	watcher.createValidatingWebhook()
+
 	return watcher, nil
 }
 
@@ -45,7 +57,9 @@ func (w Watcher) Run() {
 		for {
 			select {
 			case <-ticker.C:
+				w.checkService()
 				w.checkMutatingWebhook()
+				w.checkValidatingWebhook()
 			case <-quit:
 				ticker.Stop()
 				return
@@ -54,71 +68,35 @@ func (w Watcher) Run() {
 	}()
 }
 
-func (w Watcher) checkMutatingWebhook() error {
-	hooks, err := w.Client.AdmissionregistrationV1().MutatingWebhookConfigurations().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, hook := range hooks.Items {
-		if hook.Name == "default" {
-			klog.V(3).Infof("found mutating webhook: %s", hook.Name)
-			return err
-		}
-	}
-	klog.V(3).Infof("no mutating webhook found")
-	err = w.createMutatingWebhook()
-	if err != nil {
+func (w Watcher) Shutdown() {
+	if err := w.deleteMutatingWebhook(); err != nil {
 		klog.Error(err)
 	}
-	return nil
+	if err := w.deleteValidatingWebhook(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createPod(); err != nil {
+		klog.Error(err)
+	}
 }
 
-func (w Watcher) createMutatingWebhook() error {
-	port := int32(8443)
-	path := "/mutate"
-	sideEffects := AdmissionregistrationV1.SideEffectClassNone
-	var timeout int32 = 5
-	failurePolicy := AdmissionregistrationV1.FailurePolicyType("Fail")
-	reinvocationPolicy := AdmissionregistrationV1.ReinvocationPolicyType("Never")
-	mutatingHook := &AdmissionregistrationV1.MutatingWebhookConfiguration{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "default",
-			Namespace: "kube-system",
-		},
-		Webhooks: []AdmissionregistrationV1.MutatingWebhook{
-			{
-				Name:                    "api-server.kube-system.svc.cluster.local",
-				AdmissionReviewVersions: []string{"v1beta1", "v1"},
-				ClientConfig: AdmissionregistrationV1.WebhookClientConfig{
-					Service: &AdmissionregistrationV1.ServiceReference{
-						Namespace: "kube-system",
-						Name:      "api-server.kube-system.svc.cluster.local",
-						Path:      &path,
-						Port:      &port,
-					},
-					CABundle: w.Certificate,
-				},
-				Rules: []AdmissionregistrationV1.RuleWithOperations{
-					{
-						Operations: []AdmissionregistrationV1.OperationType{"CREATE"},
-						Rule: AdmissionregistrationV1.Rule{
-							APIGroups:   []string{""},
-							APIVersions: []string{"v1"},
-							Resources:   []string{"pods"},
-						},
-					},
-				},
-				SideEffects:        &sideEffects,
-				TimeoutSeconds:     &timeout,
-				FailurePolicy:      &failurePolicy,
-				ReinvocationPolicy: &reinvocationPolicy,
-			},
-		},
+func (w Watcher) Deploy() {
+	if err := w.deleteMutatingWebhook(); err != nil {
+		klog.Error(err)
 	}
-	_, err := w.Client.AdmissionregistrationV1().MutatingWebhookConfigurations().Create(context.TODO(), mutatingHook, metav1.CreateOptions{})
-	if err != nil {
-		return err
+	if err := w.deleteValidatingWebhook(); err != nil {
+		klog.Error(err)
 	}
-	return nil
+	if err := w.createServiceAccount(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createService(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createClusterRoleBinding(); err != nil {
+		klog.Error(err)
+	}
+	if err := w.createPod(); err != nil {
+		klog.Error(err)
+	}
 }

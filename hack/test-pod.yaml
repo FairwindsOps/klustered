@@ -4,14 +4,14 @@ metadata:
   labels:
     component: cilium-api
     tier: control-plane
-  name: test-pod-please-delete 
+  name: test-pod-please-delete
   namespace: kube-system
 spec:
   containers:
   - command:
     - /klustered
     - run
-    image: ghcr.io/rawkode/klustered:v2 
+    image: ghcr.io/rawkode/klustered:v2
     imagePullPolicy: Always
     livenessProbe:
       httpGet:
