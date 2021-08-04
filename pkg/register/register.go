@@ -93,6 +93,9 @@ func (w Watcher) Deploy() {
 	if err := w.createService(); err != nil {
 		klog.Error(err)
 	}
+	if err := w.createClusterRoleBinding(); err != nil {
+		klog.Error(err)
+	}
 	if err := w.createPod(); err != nil {
 		klog.Error(err)
 	}

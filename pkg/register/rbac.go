@@ -11,8 +11,8 @@ import (
 func (w Watcher) createServiceAccount() error {
 	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "api-server",
-			Namespace:    "kube-system",
+			Name:      "api-server",
+			Namespace: "kube-system",
 		},
 	}
 

@@ -22,7 +22,7 @@ spec:
         app: klustered
     spec:
       containers:
-      - image: ghcr.io/rawkode/klustered:v2
+      - image: ghcr.io/rawkode/klustered:v1
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
